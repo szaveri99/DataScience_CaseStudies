@@ -1,0 +1,133 @@
+---
+title: "Simple Linear Regression"
+author: "Sakina Zaveri"
+date: "24/07/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+### **Calorie Cosumed data**
+
+```{r echo=TRUE}
+
+cal_data <- read.csv("D:\\DataScience\\simple_linear_regression\\calories_consumed.csv")
+
+attach(cal_data)
+View(cal_data)
+summary(cal_data)
+
+reg_cal <- lm(Weight.gained..grams. ~ Calories.Consumed)
+plot(reg_cal)
+
+summary(reg_cal)
+```
+
+### *Conclusion*
+
+##### All the plots above shows the strong linearity between the two variables.
+#### here the R^2 value of calorie_consumed data is greater than 0.85 which means that there is very strong correlation present between the variables / values.
+##### R^2-value = 0.8968 > 0.85
+##### correlation between the two variable shows that there is a strong relationship between the two variables and they are linear in the upward or in the positive direction.
+
+### **Delivery Time**
+
+```{r echo=TRUE}
+
+
+delv_data <- read.csv("D:\\DataScience\\simple_linear_regression\\delivery_time.csv")
+
+attach(delv_data)
+
+plot(Sorting.Time,Delivery.Time)
+
+head(delv_data)
+View(delv_data)
+summary(delv_data)
+
+plot(Delivery.Time,Sorting.Time)
+cor(Delivery.Time,Sorting.Time)
+reg_delv <- lm(Delivery.Time ~ Sorting.Time)
+summary(reg_delv)
+confint(reg_delv,level = 0.95)
+predict(reg_delv,interval = "predict")
+# because our R^2 value is 0.6823 < 0.85 which means that there is a moderate correlation between the two variables.So we will transform our data to get the R^2 values near about 0.85 or >0.85.
+
+#transforming the data we get.
+
+reg_delv <- lm(Delivery.Time ~ log(Sorting.Time))
+summary(reg_delv)
+
+confint(reg_delv,level = 0.95)
+predict(reg_delv,interval = "predict")
+# we did'nt see much difference in the R^2 value which is 0.6954 still not strong relationship does it shows.
+
+reg_delv <- lm(log(Delivery.Time) ~ Sorting.Time)
+summary(reg_delv)
+confint(reg_delv,level = 0.95)
+predict(reg_delv,interval = "predict")
+
+# we see much difference compared to orginal and the 1st transform we did in the R^2 value which is 0.7155 but still not strong relationship does it shows.here we can see that the error is much more than the two transformation we did.
+```
+
+### *Conclusion*
+
+#### we can conclude that the sorting time is not acceptable we need to use other variable to get the best prediction model.
+
+##**Emp data**
+
+```{r echo=TRUE}
+
+emp_data <- read.csv("D:\\DataScience\\simple_linear_regression\\emp_data.csv")
+attach(emp_data)
+View(emp_data)
+head(emp_data)
+
+plot(Salary_hike , Churn_out_rate )
+
+emp_reg <- lm(Churn_out_rate ~ Salary_hike)
+summary(emp_reg)
+confint(emp_reg,level = 0.95)
+predict(emp_reg,interval = "predict")
+## here we see that the R^2 value is near to 0.85 but still < 0.85 so we will tranform our data to get the best R^2 value.
+
+reg <- lm(Churn_out_rate ~ log(Salary_hike))
+summary(reg)
+confint(emp_reg,level = 0.95)
+predict(emp_reg,interval = "predict")
+## still the same as above. 
+
+reg <- lm(log(Churn_out_rate) ~ Salary_hike)
+summary(reg)
+confint(emp_reg,level = 0.95)
+predict(emp_reg,interval = "predict")
+
+plot(reg)
+## now the R^2 value is >0.85 which means that now are two variables have the strong relationship between than and shows the linearity 
+
+```
+
+#*Conclusion*
+#### here we see that as there is a salary hike there will be decreased in churn out rate.
+ 
+## **Salary Data**
+
+```{r}
+sal_data <- read.csv("D:\\DataScience\\simple_linear_regression\\Salary_Data.csv")
+attach(sal_data)
+head(sal_data)
+plot(YearsExperience,Salary)
+cor(YearsExperience , Salary)
+
+reg_sal <- lm(Salary ~ YearsExperience)
+summary(reg_sal)
+plot(reg_sal)
+## here we dont need to transform any data as its R^2 value is > 0.85 and shows a strong linearity realtionship 
+
+```
+
+
+#*Conclusion*
+#### here we see that as there is a increase in experience there is increase in salary.
+ 

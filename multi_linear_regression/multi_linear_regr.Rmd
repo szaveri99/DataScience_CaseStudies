@@ -1,0 +1,262 @@
+---
+title: "Mutliple Linear Regression"
+author: "Sakina Zaveri"
+date: "10/08/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## **Startup_50 **
+```{r echo=TRUE}
+data <- read.csv("D:/DataScience/multi_linear_regression/50_Startups.csv")
+View(data)
+attach(data)
+
+str(data)
+
+## dummy variable for state
+data$State <-as.integer(factor(data$State,levels = c('New York','California','Florida'),labels=c(1,2,3)))
+View(data)
+
+summary(data) #1st moment desicion
+
+library(dplyr)
+data %>% summarise_if(is.numeric,var)  # 2nd moment desicion
+
+pairs(data)
+## here we can see that the (Profit,R.D.Spend) show the collinearity problem.  
+
+## finding the correlation between the columns.
+cor(data)
+## so we perform the partial collinearity,to see that there is a change in collinearity problem.
+
+library(corpcor)
+cor2pcor(cor(data))
+## here we can see that the (Profit,R.D.Spend) show the collinearity problem.  
+## so we perform the partial collinearity,to see that there is a change in collinearity problem.
+
+
+#multiple regression model
+model1 <- lm(Profit ~ R.D.Spend+Administration+Marketing.Spend+State , data = data)
+summary(model1)
+## here we can see that the R.D.Spend is having the corr value near about 1.00
+##still we can see the mininum change in the (Profit,R.D.Spend). 
+
+## let us build the model individually to know more about it(linear regression).
+model.rd <- lm(Profit ~ R.D.Spend , data = data)
+summary(model.rd) ## here we can see that R.D.spend is significant. 
+
+model.admin <- lm(Profit ~ Administration , data = data)
+summary(model.admin) ## here we can see that Administration is insignificant. 
+
+
+model.admin1 <- lm(Profit ~ log(Administration) , data = data)
+summary(model.admin1)
+## here we can see that Administration is still insignificant after performing tranformation. 
+
+
+model.mar <- lm(Profit ~ Marketing.Spend , data = data)
+summary(model.mar) ## here we can see that Marketing.Spend is significant. 
+
+model.ra <- lm(Profit ~ R.D.Spend + Administration)
+summary(model.ra)
+## we know that the adminstration column is insignificant so we will build a model using 2 inputs r.d.spend + administration to check p-value
+## but still there is high p-value of administartion
+
+# Applying VIF function on model to built on all inputs
+## Variance Inflation factor to check collinearity b/w variables 
+
+###install.packages("car")
+library(car)
+vif(model1) # Original model
+## vif>10 then there exists collinearity among all the variables 
+##here we see that there is no multicollinearity among the variables 
+
+## Added Variable plot to check correlation b/w variables and o/p variable
+avPlots(model1,id = TRUE)
+# The above plots will reveal whether the Output Profit
+# has an effect by changing the inputs
+# From the graph we can see there is change at all with 
+# respect to state 
+
+influencePlot(model1)
+influenceIndexPlot(model1)
+
+## regression model after removing the influential values
+model.1 <- lm(Profit ~ .-State , data = data[-c(46,47,49,50),])
+summary(model.1)
+
+model.2 <- lm(Profit ~ .-State , data = data[-c(46,50),])
+summary(model.2)
+
+##Final Model
+
+plot(model.1)
+summary(model.1)
+
+plot(model.2)
+summary(model.2)
+
+plot(lm(Profit ~ .-State , data = data[-c(46,49,50),]))
+summary(lm(Profit ~ .-State , data = data[-c(46,49,50),]))
+
+plot(lm(Profit ~ .-State , data = data[-c(46,47),]))
+summary(lm(Profit ~ .-State , data = data[-c(46,47),]))
+
+plot(lm(Profit ~ .-State , data = data[-c(47,49,50),]))
+summary(lm(Profit ~ .-State , data = data[-c(47,49,50),]))
+
+## final model assumptions
+finalmodel<-lm(Profit ~ .-State , data = data[-c(46,49,50),])
+summary(finalmodel)
+
+# Evaluate model LINE assumptions 
+plot(finalmodel)
+
+hist(residuals(finalmodel)) # close to normal distribution
+
+```
+
+### *Conclusion*
+After doing all the necessary changes we come up to a conclusion that the final model is the best model that we can prefer for the prediction of profit because we see that it has the minimum RMSE value and the prefered R^2 squared and R-adjusted value that we want.
+
+
+## **Computer Data**
+
+```{r echo=TRUE}
+comp_data <- read.csv("D:/DataScience/multi_linear_regression/Computer_Data.csv")
+View(comp_data)
+attach(comp_data)
+
+str(comp_data)
+
+##make the dummy variables for cd,multi,premimum
+comp_data$cd <- as.integer(ifelse(comp_data$cd == "yes" ,1,0))
+comp_data$multi <- as.integer(ifelse(comp_data$multi == "yes" ,1,0)) 
+comp_data$premium <- as.integer(ifelse(comp_data$premium == "yes" ,1,0)) 
+
+head(comp_data)
+
+summary(comp_data) #1st moment desicion
+
+library(dplyr)
+comp_data %>% summarise_if(is.numeric,var)  # 2nd moment desicion
+
+pairs(subset(comp_data, select=-c(X,cd,multi,premium)))
+
+cor(comp_data)
+## here we see that there is no strong correlation among all the variables and seems to be having no problem.
+model.comp <- lm(price ~ . , data = comp_data )
+summary(model.comp)
+
+library(car)
+vif(model.comp) # Original model
+## here we can say that the value > 10 shows collinearity and the variable trend shows the 
+## collinearity.
+
+avPlots(model.comp , id = TRUE)
+influenceIndexPlot(model.comp)
+## there is no change in anything everything looks good and normal
+
+plot(model.comp)
+## all the plots look normal no error is effecting the model the model is good and shows that the variables are independent.
+
+hist(residuals(model.comp))
+##close to normal  disrtibution.
+
+```
+### *Conclusion*
+the data looks to be good no need of transformation further analysis can be done without performing any changes!!
+
+## **Toyota Corolla**
+```{r echo=TRUE}
+
+data.car <- read.csv("D:/DataScience/multi_linear_regression/ToyotaCorolla.csv")
+View(data.car)
+str(data.car)
+
+Corolla<-data.car[c("Price","Age_08_04","KM","HP","cc","Doors","Gears","Quarterly_Tax","Weight")]
+str(Corolla)
+attach(Corolla)
+View(Corolla)
+
+summary(Corolla) #1st moment desicion
+
+library(dplyr)
+Corolla %>% summarise_if(is.numeric,var)  # 2nd moment desicion
+
+pairs(Corolla)
+
+cor(Corolla)
+library(corpcor)
+cor2pcor(cor(Corolla))
+
+## we can see that there is no strong correlation aong the variables so we can proceed further.
+
+## multi linear regression model
+
+model.corolla <- lm(Price ~ . , data = Corolla)
+summary(model.corolla)
+
+## cc and Doors are having high p-value which indicates the insignificance in these variables.
+
+## let us build the model individually to know more about it(linear regression).
+
+model.cc <- lm(Price ~ cc,data = Corolla)
+summary(model.cc) ## here cc is significant
+
+model.door <- lm(Price ~ Doors ,data = Corolla)
+summary(model.door) ## here Doors is significant
+
+model.cc.door <- lm(Price ~ cc+Doors ,data = Corolla)
+summary(model.cc.door) ## here we see that both the variables are significant.
+
+## the cc and doors variables are having high value through which it indicates that the model 
+## is not fit for further analysis lets check how can we overcome to it.
+
+## > 10 shows collinearity
+vif(model.corolla , id = TRUE)
+## there is no collinearity found each varible have < 10 value.
+
+## plotting added variable plot 
+
+avPlots(model.corolla)
+
+## this will show us that the is there any change in the o/p variable is we change the 
+## i/p variables,but over here the variable Doors shows the effect.
+
+## now we will see which value is effecting the data and this can be done through influential plot 
+
+influencePlot(model.corolla)
+influenceIndexPlot(model.corolla)
+
+## here we see that the 81 row is effecting the most after that 961 and 222.
+## we will remove the row which are effecting the data.
+
+model_1<-lm(Price ~.,data=Corolla[-81,])
+summary(model_1)
+
+model_2<-lm(Price ~.,data=Corolla[-c(81,961),])
+summary(model_2)
+
+model_3<-lm(Price ~.,data=Corolla[-c(81,961,222),])
+summary(model_3)
+
+## after removing all the influential value now we get the p-value of all the variables <0.05 which indicates that now the data is good to go and analysis can be performed on it.
+
+finalM <- lm(Price ~ . , data = Corolla[-c(81,961,222),])
+summary(finalM)
+
+plot(finalM)
+
+hist(residuals(finalM))
+
+```
+
+## *Conclusion* 
+here we see that after removing the influential values the data gets normal and after that plotting the final model does show the independency of all the variable that is good and does not effect the data.
+R^2 value does is also good and shows the strong coreelation among all the variables. 
+
