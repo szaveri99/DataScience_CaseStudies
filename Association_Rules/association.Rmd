@@ -1,0 +1,153 @@
+---
+title: "Association Rules"
+author: "Sakina Zaveri"
+date: "01/10/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## **load the libraries**
+```{r echo=TRUE}
+
+library(arules)
+library(arulesViz)
+
+```
+
+
+## **read the data for books!!**
+
+```{r echo=TRUE , fig.keep='all'}
+
+books <- read.csv("D:\\DataScience\\Association_Rules\\book.csv")
+View(books)
+
+
+## applying the apriori algo with support = 0.02 and confidence =  0.5
+book_rules <- apriori(as.matrix(books) , parameter = list(supp = 0.02 , conf = 0.5 , minlen = 4))
+
+head(quality(sort(book_rules,by="lift")))
+
+## inspecting the data by lift
+inspect(tail(sort(book_rules , by="lift")))
+
+## plotting the graph with the help of lift to see support and confidence for each item.
+plot(book_rules , jitter = 0 ,by="lift")
+
+
+## gives the better detailing of the graph.
+plotly_arules(book_rules,jitter=0)
+
+## for better visualization and understanding
+plot(book_rules , method = "grouped")
+plot(book_rules , method = "scatterplot")
+plot(book_rules , method = "graph")
+
+
+## applying the apriori algo with support = 0.04 and confidence =  0.7
+book_rules1 <- apriori(as.matrix(books) , parameter = list(supp = 0.04 , conf = 0.7 , minlen = 3))
+
+head(quality(sort(book_rules1,by="lift")))
+
+## inspecting the data by lift
+inspect(tail(sort(book_rules1 , by="lift")))
+
+## plotting the graph with the help of lift to see support and confidence for each item.
+plot(book_rules1 , jitter = 0 ,by="lift")
+
+
+## gives the better detailing of the graph.
+plotly_arules(book_rules1,jitter=0)
+
+## for better visualization and understanding
+plot(book_rules1 , method = "grouped")
+plot(book_rules1 , method = "scatterplot")
+plot(book_rules1 , method = "graph")
+```
+
+## **read the data for movies!!**
+
+```{r echo=TRUE , fig.keep='all'}
+movies <- read.csv("D:\\DataScience\\Association_Rules\\my_movies.csv",header = TRUE)
+View(movies)
+
+movies <- movies[,6:15]
+
+## applying the apriori algo with support = 0.02 and confidence =  0.2
+mov_rules <- apriori(as.matrix(movies) , parameter = list(supp = 0.02 , conf = 0.5 , minlen = 3))
+
+head(quality(sort(mov_rules,by="lift")))
+
+## inspecting the data by lift
+inspect(head(sort(mov_rules , by="lift")))
+
+## gives the better detailing of the graph.
+plotly_arules(mov_rules,jitter=0)
+
+## for better visualization and understanding
+plot(mov_rules , jitter = 0 ,by="lift")
+plot(mov_rules , method = "grouped")
+plot(mov_rules , method = "scatterplot")
+plot(mov_rules , method = "graph")
+
+
+## applying the apriori algo with support = 0.05 and confidence =  0.7
+mov_rules1 <- apriori(as.matrix(movies) , parameter = list(supp = 0.05 , conf = 0.7 , minlen = 4))
+
+head(quality(sort(mov_rules1,by="lift")))
+
+## inspecting the data by lift
+inspect(head(sort(mov_rules1 , by="lift")))
+
+## gives the better detailing of the graph.
+plotly_arules(mov_rules1,jitter=0)
+
+## for better visualization and understanding
+plot(mov_rules1 , jitter = 0 ,by="lift")
+plot(mov_rules1, method = "grouped")
+plot(mov_rules1 , method = "scatterplot")
+plot(mov_rules1 , method = "graph")
+
+```
+
+
+## **read the data for groceries !!**
+
+```{r echo=TRUE , fig.keep='all'}
+
+grocery <- read.transactions("D:\\DataScience\\Association_Rules\\groceries.csv",format = "basket", sep = ",")
+
+## inspecting the data by lift
+inspect(grocery[1:5])
+
+grocery@itemInfo
+
+## how many items are frequently been purchased by the customer it shows the graph.
+itemFrequencyPlot(x=grocery,topN=10)
+
+## applying the apriori algo with support = 0.005 and confidence =  0.5
+gro_rules <- apriori(grocery , parameter = list(supp = 0.005 , conf = 0.5 , minlen = 2))
+
+
+plot(gro_rules , method = "grouped matrix")
+
+## gives the better detailing of the graph for easy understanding.
+plotly_arules(gro_rules,jitter=0)
+
+## applying the apriori algo with support = 0.002 and confidence =  0.6
+gro_rules1 <- apriori(grocery , parameter = list(supp = 0.002 , conf = 0.6 , minlen = 4))
+
+plot(gro_rules1 , method = "grouped matrix")
+
+## gives the better detailing of the graph for easy understanding.
+plotly_arules(gro_rules1,jitter=0)
+
+
+
+```
+
+### *Conclusion*
+changing the support , confidence and length value will give us the different aspect view on the data and can come upto a conclusion.
