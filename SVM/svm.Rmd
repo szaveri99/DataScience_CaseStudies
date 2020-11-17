@@ -1,0 +1,99 @@
+---
+title: "Support Vector Machine"
+author: "Sakina Zaveri"
+date: "12/11/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## **Loading the required libraries**
+```{r echo=TRUE}
+
+library(kernlab)
+library(caret)
+
+```
+
+## *Forest Fire Data*
+```{r echo=TRUE , fig.keep='all'}
+
+forestfire <- read.csv("D:\\DataScience\\SVM\\forestfires.csv")
+View(forestfire)
+str(forestfire)
+sum(is.na(forestfire))
+forestfire$month <- as.numeric(factor(forestfire$month , 
+                           levels = c("jan","feb","mar","apr","may","jun","jul","aug",
+                                      "sep","oct","nov","dec") ,
+                           labels = c(1,2,3,4,5,6,7,8,9,10,11,12)))
+forestfire$day <- as.numeric(factor(forestfire$day ,
+                         levels = c("mon","tue","wed","thu","fri","sat","sun"),
+                         labels = c(1,2,3,4,5,6,7)))
+forestfire$size_category <- as.numeric(factor(forestfire$size_category , levels = c("small","large"),
+                                   labels = c(1,2)))
+
+
+forestfire <- data.frame(forestfire)
+
+## data is not normalized
+
+## data is normalized by using below function
+normalize <- function(x){
+  return ((x-min(x)) / (max(x)-min(x)))
+}
+
+data.norm <- as.data.frame(lapply(forestfire, normalize))
+View(data.norm)
+
+## splitting the data into train and test .
+
+split_data <- createDataPartition(data.norm$area , p=0.75,list = FALSE)
+svm.train <- data.norm[split_data,]
+svm.test <- data.norm[-split_data,]
+
+
+ker <- c("rbfdot", "polydot", "tanhdot", "vanilladot", "laplacedot",
+         "besseldot")
+
+
+for (i in ker) {
+  model.svm <- ksvm(area ~ .,data = svm.train , kernel = i )
+  model.pred <- predict(model.svm , newdata = svm.test)
+  print(paste("accuraccy of",i,round(cor(model.pred , svm.test$area),2)))
+  plot(model.pred , main = i)
+}
+
+## maximum accuracy is given by tanhdot .
+
+
+
+```
+
+## *Salary Data* 
+```{r echo=TRUE , fig.keep='all'}
+
+sal_trn <- read.csv("D:\\DataScience\\SVM\\SalaryData_Train.csv")
+sal_tst <- read.csv("D:\\DataScience\\SVM\\SalaryData_Test.csv") 
+
+sal_trn$educationno <- as.factor(sal_trn$educationno)
+sal_tst$educationno <- as.factor(sal_tst$educationno)
+
+## maximum data is in discrete form so there is no need for normalization 
+
+ker <- c("vanilladot","rbfdot", "polydot")
+
+for (i in ker) {
+  model <- ksvm(sal_trn$Salary ~ .,data = sal_trn , kernel = i )
+  sal.pred <- predict(model , sal_tst)
+  ag <- sal.pred == sal_tst$Salary
+  table(sal.pred , sal_tst$Salary)
+  print(paste("accuracy of",i,round(mean(sal.pred == sal_tst$Salary),2)))
+  plot(model.pred , main = i)
+}
+
+## maximum accuracy is given by rbfdot .
+
+```
+
