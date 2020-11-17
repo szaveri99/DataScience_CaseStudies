@@ -1,0 +1,141 @@
+---
+title: "Clustering Analysis"
+author: "Sakina Zaveri"
+date: "03/09/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## **Crime Data**
+
+```{r echo=TRUE , fig.keep='all'}
+crime_data <- read.csv("D:/DataScience/clustering/crime_data.csv",header = TRUE)
+
+View(crime_data)
+
+summary(crime_data)
+
+## normalize the data
+nor_data <- scale(crime_data[,2:5])
+
+## distance matrix
+d <- dist(nor_data , method = "euclidean")
+
+## performing heirarichal clustering
+
+fit <- hclust(d,method = "complete")
+
+## creating dendrogram
+plot(fit)
+plot(fit , hang = -1)
+rect.hclust(fit , k=6 , border = "red")
+
+groups <- cutree(fit , k=6)
+membership <- as.matrix(groups)
+
+final <- data.frame(crime_data , membership)
+View(final)
+aggregate(crime_data[,2:5] , by = list(final$membership), FUN = mean )
+
+## performing k-means clustering
+
+## elbow curve to decide the k-value
+wss = (nrow(nor_data)-1)*sum(apply(nor_data, 2,var))
+for (i in 2:5) wss[i] = sum(kmeans(nor_data,centers = i)$withinss)
+plot(1:5 ,wss, type = "b",xlab = "no. of clusters",ylab = "within group sums of squares",
+     main = "k-means clustering scree plot")
+
+## k value = 4 by seeing the scree plot
+fit1 <- kmeans(nor_data,4)
+str(fit1)
+
+fit1$centers
+
+##install.packages("animation")
+library(animation)
+
+km <- kmeans.ani(nor_data,4)
+
+
+final1 <- data.frame(crime_data,fit1$cluster)
+final1
+
+View(final1)
+aggregate(crime_data[,2:5] , by = list(fit1$cluster), FUN = mean )
+
+
+```
+### *Conclusion*
+
+. while performing heirarichal clustering we found that that the crime rate is arranged from    maximum to minimum
+. cluster formed in this data set are 4.
+
+
+## **East West Airlines**
+```{r echo=TRUE , fig.keep='all'}
+library(xlsx)
+air_data <- read.xlsx("D:/DataScience/clustering/EastWestAirlines.xlsx",sheetIndex = 2
+                      ,header = TRUE)
+
+View(air_data)
+
+## structure of data
+str(air_data)
+summary(air_data)
+
+## normalizing the data
+data <- scale(air_data[,2:11])
+
+## distance matrix
+dis <- dist(data , method = "euclidean")
+
+## performing heirarichal clustering
+
+fit <- hclust(dis,method = "complete")
+plot(fit)
+plot(fit , hang=-1)
+
+rect.hclust(fit , k=15 , border = "red")
+rect.hclust(fit , k=25 , border = "red")
+
+groups <- cutree(fit , k=15)
+membership <- as.matrix(groups)
+
+final <- data.frame(data , membership)
+View(final)
+aggregate(data , by = list(final$membership), FUN = mean )
+
+
+## data set is too large to determine so using heirarichal clustering is in significant.
+## data is not intrepreted
+## performing k-means clustering
+
+## elbow curve to decide the k-value
+wss = (nrow(data)-1)*sum(apply(data, 2,var))
+for (i in 2:8) wss[i] = sum(kmeans(nor_data,centers = i)$withinss)
+plot(1:8 ,wss, type = "b",xlab = "no. of clusters",ylab = "within group sums of squares",
+     main = "k-means clustering scree plot")
+
+## through scree plot the 2 clusters will be good choice
+## k-value = 2
+km <- kmeans(data , 2)
+str(km)
+
+library(animation)
+km1 <- kmeans.ani(data , 2)
+
+final <- data.frame(data,km$cluster)
+View(final)
+
+aggregate(air_data[,2:12] , by = list(km$cluster), FUN = mean )
+
+
+```
+
+### *Conclusion*
+
+.from the cluster analysis the outcome of this data set is that it is arranged in increasing  order the more the balance more the award you have .
+.cluster formed in this dataset are 2.

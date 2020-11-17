@@ -1,0 +1,211 @@
+---
+title: "Logistic Regression"
+author: "Sakina Zaveri"
+date: "01/09/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## **Bank Data**
+```{r echo=TRUE}
+bank <- read.csv("D:/DataScience/logistic_regression/bank-full.csv",header = TRUE,sep = ";")
+View(bank)
+attach(bank)
+
+str(bank)
+
+summary(bank) #1st moment desicion
+
+library(dplyr)
+bank %>% summarise_if(is.numeric,var)  # 2nd moment desicion
+
+sum(is.na(bank)) #no NA values are present.
+
+names(bank)[names(bank)=="y"] <- "term_deposit"
+names(bank)
+bank$term_deposit <- as.numeric(ifelse(bank$term_deposit == "no",0,1))
+
+## apply linear regression
+modelB <- lm(term_deposit ~ . ,data=bank)
+summary(modelB)
+
+pred1 <- predict(modelB , bank)
+pred1
+plot(bank$term_deposit , pred1)
+plot(pred1)
+
+## we cannot perform the linear regression on this data.
+
+## apply logistic regression using glm().
+
+model.bank <- glm(term_deposit ~ age + factor(job)  + factor(marital) + factor(education) 
+                  + factor(default) + balance + factor(housing) + factor(loan) + factor(month)
+                  + duration + pdays + previous +factor(poutcome), data = bank, family = "binomial")
+
+summary(model.bank)
+
+# To calculate the odds ratio ,take exp of coef(model.bank)
+exp(coef(model.bank))
+
+
+# Confusion matrix table 
+prob <- predict(model.bank,bank,type="response")
+
+# Confusion matrix and considering the threshold value as 0.5 
+confusion<-table(prob>0.5,bank$term_deposit)
+confusion
+
+# Model Accuracy 
+Accuracy<-sum(diag(confusion)/sum(confusion))
+Accuracy 
+
+##model accuracy is 90.2% which is good 
+
+pred_values <- NULL
+yes_no <- NULL
+
+pred_values <- ifelse(prob>=0.5,1,0)
+yes_no <- ifelse(prob>=0.5,"yes","no")
+
+# Creating new column to store the above values
+
+bank[,"prob"] <- prob
+bank[,"pred_values"] <- pred_values
+bank[,"yes_no"] <- yes_no
+
+View(bank)
+
+#install.packages("ROCR")
+library(ROCR)
+
+rocrpred<-prediction(prob,bank$term_deposit)
+rocrperf<-performance(rocrpred,'tpr','fpr')
+plot(rocrperf,colorize=T,text.adj=c(-0.2,1.7))
+
+rocr_cutoff <- data.frame(cut_off = rocrperf@alpha.values[[1]],fpr=rocrperf@x.values,tpr=rocrperf@y.values)
+colnames(rocr_cutoff) <- c("cut_off","FPR","TPR")
+View(rocr_cutoff)
+
+rocr_cutoff$cut_off <- round(rocr_cutoff$cut_off,6)
+# Sorting data frame with respect to tpr in decreasing order 
+rocr_cutoff <- arrange(rocr_cutoff,desc(TPR))
+View(rocr_cutoff)
+plot(rocr_cutoff)
+
+```
+
+### *Conclusion*
+As the Accuracy is 90.2% which is good so there is no need of cut-off and thershold.
+and the client has subscribed a term deposit. 
+
+
+##**Credit-Card**
+```{r echo=TRUE}
+credit <- read.csv("D:/DataScience/logistic_regression/creditcard.csv",header = TRUE)
+View(credit)
+attach(credit)
+
+str(credit)
+
+summary(credit) #1st moment desicion
+
+library(dplyr)
+credit %>% summarise_if(is.numeric,var)  # 2nd moment desicion
+
+sum(is.na(credit)) #no NA values are present.
+credit <- credit[,-1] ## removed the X column.
+names(credit)
+
+credit$card <- as.numeric(ifelse(credit$card == "yes" , 1,0))
+credit$owner <- as.numeric(ifelse(credit$owner == "yes" , 1,0))
+credit$selfemp <- as.numeric(ifelse(credit$selfemp == "yes" , 1,0))
+credit$majorcards <- as.numeric(credit$majorcards)
+credit$dependents <- as.numeric(credit$dependents)
+
+## creating train and test data.
+library(caret)
+
+set.seed(121)
+split_data <- createDataPartition(credit$card , p=0.7 ,list=FALSE)
+
+train <- data.frame(credit[split_data,])
+test <- data.frame(credit[-split_data,])
+
+##apply the linear regression.
+modelC <- lm(card ~ . ,data=credit)
+summary(modelC)
+
+predC <- predict(modelC,credit)
+
+plot(credit$card , predC)
+plot(predC)
+
+## we cannot use the linear regression model in this data to predict the output.
+
+table(train$card)
+
+## glm() use to perform the logistic regression.
+library(arm)
+
+str(train)
+
+logit <- bayesglm(card ~ reports + age + income + share + expenditure 
+                  + factor(owner) + factor(selfemp) + dependents
+                  + months + majorcards + active  ,
+                  data = train , family = binomial , control = glm.control(maxit = 50))
+summary(logit)
+
+# To calculate the odds ratio ,take exp of coef(model.bank)
+exp(coef(logit))
+
+# Confusion matrix table 
+prob <- predict(logit,credit,type="response")
+
+# Confusion matrix and considering the threshold value as 0.5 
+confusion<-table(prob>0.5,credit$card)
+confusion
+
+# Model Accuracy 
+Accuracy<-sum(diag(confusion)/sum(confusion))
+Accuracy 
+
+##model accuracy is 97.27% which is good 
+
+pred_values <- NULL
+yes_no <- NULL
+
+pred_values <- ifelse(prob>=0.5,1,0)
+yes_no <- ifelse(prob>=0.5,"yes","no")
+
+# Creating new column to store the above values
+
+credit[,"prob"] <- prob
+credit[,"pred_values"] <- pred_values
+credit[,"yes_no"] <- yes_no
+
+View(credit)
+
+library(ROCR)
+
+rocrpred<-prediction(prob,credit$card)
+rocrperf<-performance(rocrpred,'tpr','fpr')
+plot(rocrperf,colorize=T,text.adj=c(-0.2,1.7))
+
+rocr_cutoff <- data.frame(cut_off = rocrperf@alpha.values[[1]],fpr=rocrperf@x.values,tpr=rocrperf@y.values)
+colnames(rocr_cutoff) <- c("cut_off","FPR","TPR")
+View(rocr_cutoff)
+
+rocr_cutoff$cut_off <- round(rocr_cutoff$cut_off,6)
+# Sorting data frame with respect to tpr in decreasing order 
+rocr_cutoff <- arrange(rocr_cutoff,desc(TPR))
+View(rocr_cutoff)
+plot(rocr_cutoff)
+
+```
+
+### *Conclusion*
+As the Accuracy is 97.27% which is good so there is no need of cut-off and thershold.
+and the application will be accepted for card. 

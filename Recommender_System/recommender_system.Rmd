@@ -1,0 +1,63 @@
+---
+title: "Recommender System"
+author: "Sakina Zaveri"
+date: "01/10/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+### **Load the libraries**
+
+```{r}
+##install.packages("recommenderlab")  
+library(recommenderlab)
+library(Matrix)
+library(caTools)
+```
+
+
+### **Analysis on Data**
+```{r echo= TRUE , fig.keep='all'}
+
+book <- read.csv("D:\\DataScience\\Recommender_System\\book.csv")
+View(book)
+
+## structure of the data
+str(book)
+
+book <- book[,-1]
+## rating disribution
+hist(book$Book.Rating)
+
+## the datatype should be the realRatingMatrix to build recommendation engine
+
+book_real_matrix <- as(book , "realRatingMatrix")
+
+## popularity based
+
+rec_model1 <- Recommender(book_real_matrix , method = "POPULAR")
+
+## Prediction for 2 users
+
+recom_item <- predict(rec_model1 , book_real_matrix[400:402] ,n=5 , data = NULL ,type = "topNList")
+as(recom_item , "list")
+## popular model recommends the same books to all users.
+
+
+##Collaborative Filtering
+
+## Random Collaborative Filtering
+rec_model2 <- Recommender(book_real_matrix , method = "RANDOM")
+
+## Prediction for 2 users
+
+recom_item2 <- predict(rec_model2 , book_real_matrix[400:402] ,n=5 , data=NULL , type = "topNList")
+as(recom_item2 , "list")
+
+```
+### *Conclusion*
+
+through colMeans we found that the average rating is 7.556 so we prefer to take only those rows whose havind either the 7 or 8 rating according to the new data set made by using rating i.e books we can now recommend the top 3 books to the user that is present on the index that is provided in the predict function.
