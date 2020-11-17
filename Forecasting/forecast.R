@@ -1,0 +1,262 @@
+library(forecast)
+library(timeSeries)
+library(readxl)
+
+### Airlines Data
+setwd("D:\\DataScience\\Forecasting")
+
+airline <- read_excel(file.choose())
+View(airline)
+plot(airline$Passengers , type='o')
+## this plot shows the Upward Linear Trend with Multiplicative Seasonality.
+
+## creating 12 dummy variables for month variable
+X<- data.frame(outer(rep(month.abb,length = 96), month.abb,"==") + 0 )
+View(X)
+colnames(X) <- month.abb
+View(X)
+
+## cbind the data
+airline_data <- cbind(airline,X)
+View(airline)
+
+airline_data["t"] <- 1:96
+airline_data["t_square"] <- airline_data["t"]**2
+airline_data["Log_Passengers"] <- log(airline_data["Passengers"])
+View(airline_data)
+
+attach(airline_data)
+
+train <- airline_data[1:83,]
+test <- airline_data[84:96,]
+
+## LINEAR MODEL ##
+
+lin_mod <- lm(Passengers~t,data = train)
+summary(lin_mod)
+linear.pred <- data.frame(predict(lin_mod ,interval = "predict" ,newdata = test))
+rmse_linear<-sqrt(mean((test$Passengers-linear.pred$fit)^2,na.rm = T))
+rmse_linear
+
+## EXPONENTIAL MODEL ##
+
+exp_mod <- lm(Log_Passengers~t,data = train)
+summary(exp_mod)
+expo.pred <- data.frame(predict(exp_mod ,interval = "predict" ,newdata = test))
+rmse_exp<-sqrt(mean((test$Passengers-exp(expo.pred$fit))^2,na.rm = T))
+rmse_exp
+
+##QUADRATIC MODEL  ##
+
+quad_mod <- lm(Passengers~t+t_square,data = train)
+summary(quad_mod)
+quad.pred <- data.frame(predict(quad_mod ,interval = "predict" ,newdata = test))
+rmse_quad<-sqrt(mean((test$Passengers-quad.pred$fit)^2,na.rm = T))
+rmse_quad
+
+## ADDITIVE SEASONALITY MODEL ##
+
+add_sea_mod <- lm(Passengers ~ Jan+Feb+Mar+Apr+May+Jun+Jul+Aug+Sep+Oct+Nov, data=train)
+summary(add_sea_mod)
+add_sea_mod_pred <- data.frame(predict(add_sea_mod,newdata = test , interval = "predict"))
+rmse_add_sea<-sqrt(mean((test$Passengers-add_sea_mod_pred$fit)^2,na.rm = T))
+rmse_add_sea
+
+## MULTIPLICATIVE SEASONALITY MODEL ##
+
+multi_sea_mod <- lm(Log_Passengers ~ Jan+Feb+Mar+Apr+May+Jun+Jul+Aug+Sep+Oct+Nov, data=train)
+summary(multi_sea_mod)
+multi_sea_mod_pred <- data.frame(predict(multi_sea_mod,newdata = test , interval = "predict"))
+rmse_multi_sea<-sqrt(mean((test$Passengers-exp(multi_sea_mod_pred$fit))^2,na.rm = T))
+rmse_multi_sea
+
+## ADDITIVE SEASONALITY WITH QUADRATIC TREND MODEL ##
+
+add_sea_quad_mod <- lm(Passengers ~ t+t_square+Jan+Feb+Mar+Apr+May+Jun+Jul+Aug+Sep+Oct+Nov, data=train)
+summary(add_sea_quad_mod)
+add_sea_quad_mod_pred <- data.frame(predict(add_sea_quad_mod,newdata = test , interval = "predict"))
+rmse_add_sea_quad<-sqrt(mean((test$Passengers-add_sea_quad_mod_pred$fit)^2,na.rm = T))
+rmse_add_sea_quad
+
+## MULTIPLICATIVE SEASONALITY WITH LINEAR TREND MODEL ##
+
+multi_sea_lin_mod <- lm(Log_Passengers ~ t+Jan+Feb+Mar+Apr+May+Jun+Jul+Aug+Sep+Oct+Nov, data=train)
+summary(multi_sea_lin_mod)
+multi_sea_lin_mod_pred <- data.frame(predict(multi_sea_lin_mod,newdata = test , interval = "predict"))
+rmse_multi_sea_lin<-sqrt(mean((test$Passengers-exp(multi_sea_lin_mod_pred$fit))^2,na.rm = T))
+rmse_multi_sea_lin
+
+RMSE <- data.frame(c("rmse_linear","rmse_expo","rmse_Quad","rmse_sea_add","rmse_Add_sea_Quad"
+                     ,"rmse_multi_sea","rmse_multi_sea_Lin")
+                     ,c(rmse_linear,rmse_exp,rmse_quad,rmse_add_sea,
+                         rmse_add_sea_quad,rmse_multi_sea,rmse_multi_sea_lin))
+colnames(RMSE) <- c('Model','RMSE')
+View(RMSE)
+
+## Least RMSE value is of Multiplicative seasonality with linear trend.
+## we will choose this model for further predictions/forecasting.
+
+new_model <- lm(Log_Passengers ~ t+Jan+Feb+Mar+Apr+May+Jun+Jul+Aug+Sep+Oct+Nov, data=airline_data)
+
+resid <- residuals(new_model)
+resid[1:10]
+windows()
+acf(resid,lag.max = 10)
+# By principal of parcimony we will consider lag - 1  as we have so 
+# many significant lags 
+# Building Autoregressive model on residuals consider lag-1 
+
+new_model_pred<-data.frame(predict(new_model,newdata=airline_data,interval='predict'))
+new_model_fin <- exp(new_model$fitted.values)
+View(new_model_fin)
+pred_res<- predict(arima(Log_Passengers,order=c(1,0,0)),n.ahead = 12)
+passenger <- as.ts(airline$Passengers)
+pas <- ts(data = passenger  ,start = c(1995,1),end = c(2002,2) , frequency = 12)
+AR <- auto.arima(pas)
+summary(a)
+
+Month <- as.data.frame(airline$Month)
+Final <- as.data.frame(cbind(Month,airline_data$Passengers,new_model_fin))
+colnames(Final) <-c("Month","Passengers","New_Pred_Value")
+Final <- as.data.frame(Final)
+View(Final)
+
+## plotting the final graph of predicted and original values.
+plot(Final$New_Pred_Value ,type='l',col="red")
+lines(Final$Passengers ,type ='l',col="blue")
+
+forecastmodel <- forecast(AR,level = c(95),h=10*12)
+plot(forecastmodel)
+
+##############################################################################################
+
+### Coca_cola Data
+setwd("D:\\DataScience\\Forecasting")
+
+coke <- read_excel(file.choose())
+View(coke)
+plot(coke$Sales , type='o')
+## this plot shows the Upward Exponential Trend with Multiplicative Seasonality.
+
+## creating 4 dummy variables for Quarter variable
+Q1 <- data.frame(ifelse(grepl("Q1",coke$Quarter),1,0))
+Q2 <- data.frame(ifelse(grepl("Q2",coke$Quarter),1,0))
+Q3 <- data.frame(ifelse(grepl("Q3",coke$Quarter),1,0))
+Q4 <- data.frame(ifelse(grepl("Q4",coke$Quarter),1,0))
+
+## cbind the data
+coke_data <- cbind(coke,Q1,Q2,Q3,Q4)
+colnames(coke_data)[3:6] <- c("Q1","Q2","Q3","Q4")
+View(coke_data)
+
+coke_data["t"] <- 1:42
+coke_data["t_square"] <- coke_data["t"]**2
+coke_data["Log_Sales"] <- log(coke_data["Sales"])
+View(coke_data)
+
+attach(coke_data)
+
+train <- coke_data[1:29,]
+test <- coke_data[30:42,]
+
+## LINEAR MODEL ##
+
+lin_mod <- lm(Sales~t,data = train)
+summary(lin_mod)
+linear.pred <- data.frame(predict(lin_mod ,interval = "predict" ,newdata = test))
+rmse_linear<-sqrt(mean((test$Sales-linear.pred$fit)^2,na.rm = T))
+rmse_linear
+
+## EXPONENTIAL MODEL ##
+
+exp_mod <- lm(Log_Sales~t,data = train)
+summary(exp_mod)
+expo.pred <- data.frame(predict(exp_mod ,interval = "predict" ,newdata = test))
+rmse_exp<-sqrt(mean((test$Sales-exp(expo.pred$fit))^2,na.rm = T))
+rmse_exp
+
+##QUADRATIC MODEL  ##
+
+quad_mod <- lm(Sales~t+t_square,data = train)
+summary(quad_mod)
+quad.pred <- data.frame(predict(quad_mod ,interval = "predict" ,newdata = test))
+rmse_quad<-sqrt(mean((test$Sales-quad.pred$fit)^2,na.rm = T))
+rmse_quad
+
+## ADDITIVE SEASONALITY MODEL ##
+
+add_sea_mod <- lm(Sales ~ Q1+Q2+Q3, data=train)
+summary(add_sea_mod)
+add_sea_mod_pred <- data.frame(predict(add_sea_mod,newdata = test , interval = "predict"))
+rmse_add_sea<-sqrt(mean((test$Sales-add_sea_mod_pred$fit)^2,na.rm = T))
+rmse_add_sea
+
+## MULTIPLICATIVE SEASONALITY MODEL ##
+
+multi_sea_mod <- lm(Log_Sales ~ Q1+Q2+Q3, data=train)
+summary(multi_sea_mod)
+multi_sea_mod_pred <- data.frame(predict(multi_sea_mod,newdata = test , interval = "predict"))
+rmse_multi_sea<-sqrt(mean((test$Sales-exp(multi_sea_mod_pred$fit))^2,na.rm = T))
+rmse_multi_sea
+
+## ADDITIVE SEASONALITY WITH QUADRATIC TREND MODEL ##
+
+add_sea_quad_mod <- lm(Sales ~ t+t_square+Q1+Q2+Q3, data=train)
+summary(add_sea_quad_mod)
+add_sea_quad_mod_pred <- data.frame(predict(add_sea_quad_mod,newdata = test , interval = "predict"))
+rmse_add_sea_quad<-sqrt(mean((test$Sales-add_sea_quad_mod_pred$fit)^2,na.rm = T))
+rmse_add_sea_quad
+
+## MULTIPLICATIVE SEASONALITY WITH LINEAR TREND MODEL ##
+
+multi_sea_lin_mod <- lm(Log_Sales ~ t+Q1+Q2+Q3, data=train)
+summary(multi_sea_lin_mod)
+multi_sea_lin_mod_pred <- data.frame(predict(multi_sea_lin_mod,newdata = test , interval = "predict"))
+rmse_multi_sea_lin<-sqrt(mean((test$Sales-exp(multi_sea_lin_mod_pred$fit))^2,na.rm = T))
+rmse_multi_sea_lin
+
+RMSE <- data.frame(c("rmse_linear","rmse_expo","rmse_Quad","rmse_sea_add","rmse_Add_sea_Quad"
+                     ,"rmse_multi_sea","rmse_multi_sea_Lin")
+                   ,c(rmse_linear,rmse_exp,rmse_quad,rmse_add_sea,
+                      rmse_add_sea_quad,rmse_multi_sea,rmse_multi_sea_lin))
+colnames(RMSE) <- c('Model','RMSE')
+View(RMSE)
+
+## Least RMSE value is of Multiplicative seasonality with linear trend.
+## we will choose this model for further predictions/forecasting.
+
+new_model <- lm(Log_Sales ~ t+Q1+Q2+Q3, data=coke_data)
+
+resid <- residuals(new_model)
+resid[1:10]
+windows()
+acf(resid,lag.max = 10)
+pacf(resid,lag.max = 10)
+## lag-1 seems to be error significant
+
+new_model_pred<-data.frame(predict(new_model,newdata=coke_data,interval='predict'))
+new_model_fin <- exp(new_model$fitted.values)
+View(new_model_fin)
+
+cs <- as.ts(coke$Sales)
+coca_cola <- ts(data = cs  ,start = c(1986,1),end = c(1999,2) , frequency = 4)
+a <- auto.arima(coca_cola)
+summary(a)
+## auto-arima does also gives the same results
+
+pred_res<- predict(arima(Log_Sales,order=c(1,0,0)),n.ahead = 4)
+Quarter <- as.data.frame(coke$Quarter)
+Final <- as.data.frame(cbind(Quarter,coke_data$Sales,new_model_fin))
+colnames(Final) <-c("Quarter","Sales","New_Pred_Value")
+Final <- as.data.frame(Final)
+View(Final)
+
+## plotting the final graph of predicted and original values.
+plot(Final$New_Pred_Value ,type='l',col="red")
+lines(Final$Sales ,type ='l',col="blue")
+
+forecastmodel <- forecast(a,level = c(95),h=10*4)
+plot(forecastmodel)
+
+##############################################################################################
+c

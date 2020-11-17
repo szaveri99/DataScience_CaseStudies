@@ -1,0 +1,146 @@
+---
+title: "KNN"
+author: "Sakina Zaveri"
+date: "08/11/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## *Zoo DataSet*
+
+```{r echo=TRUE, fig.keep='all'}
+library(caret)
+
+zoo <- read.csv("D:\\DataScience\\KNN\\Zoo.csv")
+View(zoo)
+
+str(zoo)
+summary(zoo)
+
+table(zoo$type)
+round(prop.table(zoo$type)*100,digits=1)
+
+#normalizing the data
+normalize <- function(x){
+  return((x-min(x))/(max(x)-min(x)))
+}
+
+zoo_norm <- as.data.frame(lapply(zoo[,-1], normalize))
+summary(zoo_norm)
+
+# splitting the data into train and test
+set.seed(1231)
+zoo_train <- zoo_norm[1:70,]
+zoo_test <- zoo_norm[71:101,]
+
+# data with labels
+zoo_train_labels <- zoo_norm[1:70,1]
+zoo_test_labels <- zoo_norm[71:101,1]
+
+## knn classification
+library(class)
+
+zoo_pred <- knn(train = zoo_train , test = zoo_test,cl = zoo_train_labels,k=2)
+
+## accuracy
+acc <- 100 * sum(zoo_test_labels==zoo_pred) / NROW(zoo_test_labels)
+print(paste("Accuracy is : ",acc))
+
+# table for actual and predicted values
+library(gmodels)
+
+CrossTable(x = zoo_test_labels ,y = zoo_pred,prop.chisq = FALSE)
+# table(zoo_pred , zoo_test_labels)
+
+confusionMatrix(table(zoo_pred , zoo_test_labels))
+
+## checking for the best accuracy at which k-value
+k.optm =1
+
+for (i in 1:20) {
+  knn.value <- knn(train = zoo_train , test = zoo_test,cl = zoo_train_labels,k=i)
+  k.optm[i] <- 100 * sum(zoo_test_labels==knn.value) / NROW(zoo_test_labels)
+  k=i
+  cat(k,"=",k.optm[i],"\n")
+}
+
+plot(k.optm,type = "b",xlab="k-value" ,ylab="accuracy-level")
+
+## at k-value = 4 with get the 100% accuracy and at k-value = 1 with get the same value for all except the k-value = 4
+
+
+zoo_pred <- knn(train = zoo_train , test = zoo_test,cl = zoo_train_labels,k=4)
+acc <- 100 * sum(zoo_test_labels==zoo_pred) / NROW(zoo_test_labels)
+print(paste("Accuracy is : ",acc))
+
+```
+
+## *Glass Dataset*
+
+```{r echo=TRUE , fig.keep='all'}
+library(caret)
+library(caTools)
+glass <- read.csv("D:\\DataScience\\KNN\\glass.csv")
+str(glass)
+View(glass)
+
+## changing the glass$Type to factor
+glass$Type <- factor(glass$Type)
+prop.table(table(glass$Type))*100
+
+## normalizing the data
+normalize <- function(x){
+  return((x-min(x))/(max(x)-min(x)))
+}
+
+glass_n <- as.data.frame(lapply(glass[,1:9], normalize))
+summary(glass_n)
+View(glass_n)
+
+## binding with type column
+glass_n <- cbind(glass_n,glass[10])
+
+## splitting the data into train and test
+set.seed(10)
+split_data <- sample <- sample.split(glass_n$Type,SplitRatio = 0.70)
+
+glass_train <- subset(glass_n,sample==TRUE) 
+glass_test <- subset(glass_n,sample==FALSE)
+View(glass_test)
+
+## applying knn
+library(class)
+
+glass_pred <- knn(train = glass_train[1:9] , test = glass_test[1:9] , cl = glass_train$Type , k=4)
+
+View(glass_pred)
+head(glass_test$Type)
+mean(glass_pred==glass_test$Type)
+confusionMatrix(glass_pred , factor(glass_test$Type))
+
+print(paste("Acuuracy is : ",mean(glass_pred==glass_test$Type)))
+
+## checking for the best k-value in which we get the best accuracy.
+k.optm =1
+
+for (i in 1:20) {
+  knn.value <- knn(train = glass_train[1:9] , test = glass_test[1:9] , cl = glass_train$Type, k=i)
+  k.optm[i] <- mean(knn.value==glass_test$Type)
+  k=i
+  cat(k,"=",k.optm[i],"\n")
+}
+
+plot(k.optm,type = "b",xlab="k-value" ,ylab="accuracy-level")
+
+## best k-value at which high accuracy is 1.
+
+glass_pred <- knn(train = glass_train[1:9] , test = glass_test[1:9] , cl = glass_train$Type , k=1)
+print(paste("Accuracy is : ",mean(glass_pred==glass_test$Type)))
+confusionMatrix(glass_pred , factor(glass_test$Type))
+
+
+```
+

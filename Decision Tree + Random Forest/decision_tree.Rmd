@@ -1,0 +1,100 @@
+---
+title: "Decision Tree"
+author: "Sakina Zaveri"
+date: "10/11/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+## *Loading the Libraries*
+```{r echo=TRUE}
+library(C50)
+library(tree)
+library(caret)
+library(gmodels)
+library(party)
+```
+
+### *Fraud Check Dataset*
+
+```{r echo=TRUE ,fig.keep='all'}
+fraud <- read.csv("D:\\DataScience\\Decision Tree\\Fraud_check.csv")
+View(fraud)
+str(fraud)
+sum(is.na(fraud))
+
+tax_class <- ifelse(fraud$Taxable.Income <= 30000 , "Risky","Good")
+data <-data.frame(fraud[-3] , tax_class)
+
+set.seed(101)
+split <- createDataPartition(data$tax_class , p=0.75 , list = FALSE) 
+train <- data[split,]
+test <- data[-split,]
+
+## using C50 package ##
+
+## building a model  
+train.tree <- C5.0(train$tax_class ~ .,data = train)  
+pred.train <- predict(train.tree , test)
+table(pred.train , test$tax_class)
+mean(pred.train == test$tax_class)
+confusionMatrix(pred.train , test$tax_class)
+CrossTable(pred.train , test$tax_class)
+
+## using party package ##
+
+# Building a model  
+train.tree <- ctree(train$tax_class ~ . ,data = train)
+pred.train <- predict(train.tree , test)
+table(pred.train , test$tax_class)
+mean(pred.train == test$tax_class)
+confusionMatrix(pred.train , test$tax_class)
+```
+
+
+### *Company Dataset*
+
+```{r echo=TRUE , fig.keep='all'}
+company <- read.csv("D:\\DataScience\\Decision Tree\\Company_Data.csv")
+View(company)
+str(company)
+
+sum(is.na(company))
+
+sales_class <- ifelse(company$Sales<=10 , "Low" ,"High")
+data1 <- data.frame(company[,-1] , sales_class)
+
+View(data1)
+
+set.seed(222)
+
+split_c <- createDataPartition(data1$sales_class , p=0.75 , list = FALSE) 
+train1 <- data1[split_c,]
+test1 <- data1[-split_c,]
+
+View(train1)
+
+## using C50 package ##
+
+# Building a model  
+train.tree <- C5.0(train1$sales_class ~ .,data = train1)  
+pred.train <- predict(train.tree , test1)
+table(pred.train , test1$sales_class)
+mean(pred.train == test1$sales_class)
+confusionMatrix(pred.train , test1$sales_class)
+CrossTable(pred.train , test1$sales_class)
+
+## using party package ##
+
+train.tree <- ctree(train1$sales_class ~ .,data = train1)  
+pred.train <- predict(train.tree , test1)
+table(pred.train , test1$sales_class)
+mean(pred.train == test1$sales_class)
+confusionMatrix(pred.train , test1$sales_class)
+CrossTable(pred.train , test1$sales_class)
+
+
+```
+
